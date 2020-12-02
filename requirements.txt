@@ -1,4 +1,4 @@
-numpy==1.12.1
-gym==0.9.2
-matplotlib==2.0.0
-pygame==1.9.3
+numpy==1.19.4
+gym==0.17.3
+matplotlib==3.3.3
+pygame==2.0.0

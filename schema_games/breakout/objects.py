@@ -2,17 +2,28 @@ import copy
 import numpy as np
 import random
 
-from schema_games.utils import \
-    compute_edge_nzis, compute_shape_from_nzis, \
-    get_distinct_colors, shape_to_nzis, offset_nzis_from_position
-from schema_games.breakout.constants import \
-    _MAX_SPEED, _BALL_SHAPE, CLASSIC_BALL_COLOR, DEFAULT_PADDLE_COLOR, \
-    CLASSIC_WALL_COLOR, MAX_NZIS_PER_ENTITY, CLASSIC_BRICK_COLORS
+from schema_games.utils import (
+    compute_edge_nzis,
+    compute_shape_from_nzis,
+    get_distinct_colors,
+    shape_to_nzis,
+    offset_nzis_from_position,
+)
+from schema_games.breakout.constants import (
+    _MAX_SPEED,
+    _BALL_SHAPE,
+    CLASSIC_BALL_COLOR,
+    DEFAULT_PADDLE_COLOR,
+    CLASSIC_WALL_COLOR,
+    MAX_NZIS_PER_ENTITY,
+    CLASSIC_BRICK_COLORS,
+)
 
 
 ###############################################################################
 # API
 ###############################################################################
+
 
 class BreakoutObject(object):
     """
@@ -66,6 +77,7 @@ class BreakoutObject(object):
     '_destruction_effect' will be called when a ball collides with this object
     and destroys it.
     """
+
     unique_entity_id = 0
     unique_object_id = 0
     unique_color_id = 0
@@ -73,15 +85,17 @@ class BreakoutObject(object):
     # Map from RGB color to a unique id for that color.
     color_map = {}
 
-    def __init__(self,
-                 position,
-                 nzis=None,
-                 shape=None,
-                 hitpoints=np.PINF,
-                 is_entity=True,
-                 color=(128, 128, 128),
-                 visible=True,
-                 indirect_collision_effects=True):
+    def __init__(
+        self,
+        position,
+        nzis=None,
+        shape=None,
+        hitpoints=np.PINF,
+        is_entity=True,
+        color=(128, 128, 128),
+        visible=True,
+        indirect_collision_effects=True,
+    ):
 
         self._position = np.array(position)
         self.hitpoints = hitpoints
@@ -92,8 +106,9 @@ class BreakoutObject(object):
         self.indirect_collision_effects = indirect_collision_effects
 
         assert self.hitpoints > 0
-        assert ((nzis is None and shape is not None) or
-                (nzis is not None and shape is None))
+        assert (nzis is None and shape is not None) or (
+            nzis is not None and shape is None
+        )
 
         # Set non-zero indices of the object mask's
         if nzis is None:
@@ -104,7 +119,7 @@ class BreakoutObject(object):
         if is_entity:
             self.entity_id = BreakoutObject.unique_entity_id
             BreakoutObject.unique_entity_id += MAX_NZIS_PER_ENTITY
-            assert len(self._nzis) <= MAX_NZIS_PER_ENTITY
+            assert self._nzis.shape[0] <= MAX_NZIS_PER_ENTITY
         else:
             self.entity_id = None
 
@@ -171,7 +186,8 @@ class BreakoutObject(object):
         """
         if self._cached_offset_edge_nzis is None:
             self._cached_offset_edge_nzis = offset_nzis_from_position(
-                compute_edge_nzis(self._nzis), self.position)
+                compute_edge_nzis(self._nzis), self.position
+            )
         return self._cached_offset_edge_nzis
 
     @offset_edge_nzis.setter
@@ -185,8 +201,9 @@ class BreakoutObject(object):
         the object within the game frame.
         """
         if self._cached_offset_nzis is None:
-            self._cached_offset_nzis = \
-                offset_nzis_from_position(self._nzis, self._position)
+            self._cached_offset_nzis = offset_nzis_from_position(
+                self._nzis, self._position
+            )
         return self._cached_offset_nzis
 
     @offset_nzis.setter
@@ -314,6 +331,7 @@ class MoveableObject(BreakoutObject):
     """
     Base class for all objects whose position may change.
     """
+
     pass
 
 
@@ -321,6 +339,7 @@ class MomentumObject(MoveableObject):
     """
     Base class for all objects with action-independent momentum.
     """
+
     pass
 
 
@@ -328,11 +347,13 @@ class MomentumObject(MoveableObject):
 # Different kinds of bricks
 ###############################################################################
 
+
 class Brick(BreakoutObject):
     """
     Base class for Breakout bricks. It has a custom attribute 'reward' that is
     only accessed within this class.
     """
+
     def __init__(self, *args, **kwargs):
         """
         Parameters
@@ -340,10 +361,10 @@ class Brick(BreakoutObject):
         reward : int
             Reward upon collision.
         """
-        kwargs.setdefault('color', random.choice(get_distinct_colors(6)))
-        kwargs.setdefault('hitpoints', 1)
-        kwargs.setdefault('indirect_collision_effects', False)
-        self.reward = kwargs.pop('reward', 1)
+        kwargs.setdefault("color", random.choice(get_distinct_colors(6)))
+        kwargs.setdefault("hitpoints", 1)
+        kwargs.setdefault("indirect_collision_effects", False)
+        self.reward = kwargs.pop("reward", 1)
 
         super(Brick, self).__init__(*args, **kwargs)
 
@@ -361,8 +382,7 @@ class Brick(BreakoutObject):
         Helper function.
         """
         if num_bricks < len(CLASSIC_BRICK_COLORS):
-            return (CLASSIC_BRICK_COLORS[:-2] +
-                    [CLASSIC_BRICK_COLORS[-1]])
+            return CLASSIC_BRICK_COLORS[:-2] + [CLASSIC_BRICK_COLORS[-1]]
         else:
             return CLASSIC_BRICK_COLORS
 
@@ -371,8 +391,9 @@ class StrongBrick(Brick):
     """
     Bricks that take multiple hits to be destroyed.
     """
+
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('hitpoints', 3)
+        kwargs.setdefault("hitpoints", 3)
         super(StrongBrick, self).__init__(*args, **kwargs)
 
         self.init_hitpoints = copy.copy(self.hitpoints)
@@ -388,10 +409,10 @@ class StrongBrick(Brick):
         # Change color
         coef = float(self.hitpoints) / self.init_hitpoints
         self.color = (
-                int(self.init_color[0] * coef),
-                int(self.init_color[1] * coef),
-                int(self.init_color[2] * coef),
-            )
+            int(self.init_color[0] * coef),
+            int(self.init_color[1] * coef),
+            int(self.init_color[2] * coef),
+        )
 
     def _destruction_effect(self, environment):
         environment.reward += self.reward
@@ -403,6 +424,7 @@ class PaddleShrinkingBrick(Brick):
     """
     Bricks that shrink the paddle when hit.
     """
+
     def __init__(self, *args, **kwargs):
         """
         Parameters
@@ -410,8 +432,8 @@ class PaddleShrinkingBrick(Brick):
         shrinkage : int
             Amount by which to shrink the paddle.
         """
-        kwargs.setdefault('color', (242, 79, 34))
-        self.shrinkage = kwargs.pop('shrinkage', 4)
+        kwargs.setdefault("color", (242, 79, 34))
+        self.shrinkage = kwargs.pop("shrinkage", 4)
         super(PaddleShrinkingBrick, self).__init__(*args, **kwargs)
 
     def _collision_effect(self, environment):
@@ -430,6 +452,7 @@ class PaddleGrowingBrick(Brick):
     """
     Bricks that grow the paddle when hit.
     """
+
     def __init__(self, *args, **kwargs):
         """
         Parameters
@@ -437,8 +460,8 @@ class PaddleGrowingBrick(Brick):
         growth : int
             Amount by which to grow the paddle.
         """
-        kwargs.setdefault('color', (34, 197, 242))
-        self.growth = kwargs.pop('growth', 4)
+        kwargs.setdefault("color", (34, 197, 242))
+        self.growth = kwargs.pop("growth", 4)
         super(PaddleGrowingBrick, self).__init__(*args, **kwargs)
 
     def _collision_effect(self, environment):
@@ -458,6 +481,7 @@ class AcceleratorBrick(Brick):
     """
     Bricks that permanently accelerate the ball when hit.
     """
+
     trigger_counter = _MAX_SPEED - 1
 
     def __init__(self, *args, **kwargs):
@@ -485,6 +509,7 @@ class ResetterBrick(Brick):
     Upon collision, this brick yields some reward and then calls the
     environment's layout function again to reset the game.
     """
+
     def __init__(self, *args, **kwargs):
         super(ResetterBrick, self).__init__(*args, **kwargs)
 
@@ -500,13 +525,15 @@ class ResetterBrick(Brick):
 # Other entities: paddle, ball, wall, etc.
 ###############################################################################
 
+
 class Paddle(BreakoutObject):
     """
     Paddle. Note that ball-paddle collisions will *not* trigger a call of
     Paddle._collision_effect!
     """
+
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('color', DEFAULT_PADDLE_COLOR)
+        kwargs.setdefault("color", DEFAULT_PADDLE_COLOR)
         super(Paddle, self).__init__(*args, **kwargs)
 
     def shrink(self, amount, min_length):
@@ -531,14 +558,15 @@ class Ball(MomentumObject):
     Ball. Unlike MomentumObject, it has a special attribute, velocity_index,
     that determines its velocity.
     """
+
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('color', CLASSIC_BALL_COLOR)
+        kwargs.setdefault("color", CLASSIC_BALL_COLOR)
 
         # Force ball shape since it's an immutable parameter
-        assert not {'shape', 'nzis'}.intersection(kwargs.keys())
-        kwargs['shape'] = _BALL_SHAPE
-        kwargs['nzis'] = None
-        self.velocity_index = kwargs.pop('velocity_index', None)
+        assert not {"shape", "nzis"}.intersection(kwargs.keys())
+        kwargs["shape"] = _BALL_SHAPE
+        kwargs["nzis"] = None
+        self.velocity_index = kwargs.pop("velocity_index", None)
 
         super(Ball, self).__init__(*args, **kwargs)
 
@@ -547,11 +575,12 @@ class Wall(BreakoutObject):
     """
     Wall. It has shape (1, 1) by default.
     """
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('color', CLASSIC_WALL_COLOR)
 
-        if 'nzis' not in kwargs and 'shape' not in kwargs:
-            kwargs['nzis'] = [(0, 0)]
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("color", CLASSIC_WALL_COLOR)
+
+        if "nzis" not in kwargs and "shape" not in kwargs:
+            kwargs["nzis"] = [(0, 0)]
 
         super(Wall, self).__init__(*args, **kwargs)
 
@@ -565,6 +594,7 @@ class PaddleShrinkingWall(Wall):
     a class attribute 'trigger_count' to make sure that the effect be triggered
     only once.
     """
+
     trigger_count = False
 
     def __init__(self, *args, **kwargs):
@@ -585,6 +615,7 @@ class WallOfPunishment(Wall):
     agents. Note that no collision effects are triggered and that rewards are
     handled by the engine normally.
     """
+
     def __init__(self, *args, **kwargs):
         """
         No need to do anything here, the reward is handled below.
@@ -602,6 +633,7 @@ class HorizontallyMovingObstacle(MomentumObject):
     Wall that bounces back and forth. Note that velocity is encoded differently
     than the ball, which is a special case.
     """
+
     def __init__(self, *args, **kwargs):
         """
         Parameters
@@ -609,6 +641,6 @@ class HorizontallyMovingObstacle(MomentumObject):
         velocity : (int, int)
             Initial velocity of the object.
         """
-        self.velocity = kwargs.pop('velocity')
+        self.velocity = kwargs.pop("velocity")
         assert self.velocity[1] == 0
         super(HorizontallyMovingObstacle, self).__init__(*args, **kwargs)
