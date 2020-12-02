@@ -1,6 +1,8 @@
-[![](assets/vicarious_logo.png)](https://www.vicarious.com/general-game-playing-with-schema-networks.html)
 
 ## Breakout Environments from Schema Network ICML '17 Paper
+
+Adapted the original [repository](https://github.com/vicariousinc/schema-games) to have a working solution for Python3.
+
 This repository contains the Breakout environments used to evaluate Schema Networks against A3C and Progressive Networks, as described in [our ICML '17 paper](https://www.vicarious.com/img/icml2017-schemas.pdf).
 
 ## How to play
